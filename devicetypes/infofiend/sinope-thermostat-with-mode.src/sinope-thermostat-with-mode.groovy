@@ -344,7 +344,8 @@ def setHeatingSetpoint(temp) {
 				log.debug resp.data
 			}
     	    sendEvent(name: 'thermPresence', value: "Home", display: false, isStateChange: true )
-	    	sendEvent(name: 'thermMode', value: "Manual", display: false, isStateChange: true) 
+	    	sendEvent(name: 'thermMode', value: "Manual", display: false, isStateChange: true)
+            sendEvent(name: 'thermostatMode', value: "heat") // Added to accomodate SmartThings integrations that rely on this mode... specifically Amazon Echo
 		}
     
 		log.debug "setHeatingSetpoint: temperatureUnit = ${temperatureUnit}"
@@ -377,7 +378,7 @@ def setHeatingSetpoint(temp) {
     		log.debug resp.data
 		}	
     
-		schedule (now() +  2500, poll )
+		schedule (now() +  1000, poll )
 	}
 }
 
@@ -510,6 +511,7 @@ def poll() {
 
 	    def myPresence = ""
     	def myMode = ""
+        def sinopeMode = ""
         
     	def thermostatID= state.deviceId 
         def dataAuthSession = state.dataAuth.session
@@ -542,31 +544,39 @@ def poll() {
 	        tempUnit = "fahrenheit"
         } 
     	sendEvent(name: 'temperatureUnit', value: tempUnit, display: true, isStateChange: true)
-        
+        // Added stThermoMode to create an equivalency between the Sinope proprietary thermostat modes and the SmartThings thermostat supported modes
+	    // The stThermoMode is primarily meant to allow for Amazon Echo support but effectively adds support for any device that relies on the ST API
+	    // The "equivalency" is loose in this case, so it is a good idea to customize this section if you are using these thermostats to support cooling
+	    // I would suppose that one could layer some logic to determine the temperature relationships and if it were a cooler temp, flag the mode as "cool"
 	    switch (data.status.mode) {		
     		case 0: 			
 				myPresence = "Home"
-        		myMode = "Standby"            
+        		myMode = "Standby"
+                stThermoMode = "off"
 				break;
     
 		    case 2: 			
 				myPresence = "Home"
 	        	myMode = "Manual"
+                stThermoMode = "heat"
 				break;
     
 		    case 3: 			
 				myPresence = "Home"
 	        	myMode = "Auto"
+                stThermoMode = "auto"
 				break;
     	
 	    	case 5: 			
 				myPresence = "Away"
 		        myMode = "Away"
+                stThermoMode = "off"
 				break;
 
 	    	case 131: 			
 				myPresence = "Home"
 		        myMode = "X-Bypass"
+                stThermoMode = "heat"
 				break;
 	
 		}            
@@ -599,6 +609,7 @@ def poll() {
     
 	    sendEvent(name: 'thermPresence', value: myPresence, display: false) //isStateChange: true,
     	sendEvent(name: 'thermMode', value: myMode, display: false)	    //isStateChange: true, 
+        sendEvent(name: 'thermostatMode', value: stThermoMode, display: false)	    // Added to accomodate SmartThings integrations that rely on this mode... specifically Amazon Echo,
 	    sendEvent(name: 'heatingSetpoint', value: mySetpoint, label: spLabel, backgroundColor: "${myColor}", display: false) 	//isStateChange: true, 
 		sendEvent(name: 'temperature', value: myTemp, display: false)	//isStateChange: true, 
 		sendEvent(name: 'thermLoad', value: myLoad, display: false)		//isStateChange: true, 
@@ -964,4 +975,3 @@ def DeviceData(){
 	sendEvent(name: 'heatingSetpoint', value: heatingSetpoint, unit: temperatureUnit)
     sendEvent(name: 'thermostatOperatingState', value: "${data.status.heatLevel}")
 }
-
