@@ -511,7 +511,7 @@ def poll() {
 
 	    def myPresence = ""
     	def myMode = ""
-        def sinopeMode = ""
+        def stThermoMode = ""
         
     	def thermostatID= state.deviceId 
         def dataAuthSession = state.dataAuth.session
