@@ -378,7 +378,7 @@ def setHeatingSetpoint(temp) {
     		log.debug resp.data
 		}	
     
-		schedule (now() +  1000, poll )
+		schedule (now() +  2500, poll )
 	}
 }
 
